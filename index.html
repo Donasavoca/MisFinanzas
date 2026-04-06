@@ -1059,11 +1059,23 @@
       </div>
     </div>
     <div class="container">
+      <div class="section-label">Resumen</div>
+      <div class="group">
+        <div class="group-row" onclick="shareMonthlySummary()">
+          <div class="group-row-icon green">📊</div>
+          <div class="group-row-body">
+            <div class="group-row-title">Resumen mensual</div>
+            <div class="group-row-subtitle">Compartir por WhatsApp, iMessage…</div>
+          </div>
+          <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </div>
+
       <div class="section-label">Datos</div>
       <div class="group">
         <div class="group-row" onclick="exportData()">
           <div class="group-row-icon blue">📤</div>
-          <div class="group-row-body"><div class="group-row-title">Exportar datos</div></div>
+          <div class="group-row-body"><div class="group-row-title">Exportar backup</div></div>
           <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
         <div class="group-row" onclick="importData()">
@@ -1804,6 +1816,118 @@
         updateEl.textContent = 'Sin datos';
         if (dotEl) dotEl.className = 'exchange-dot stale';
       }
+    }
+
+    // ==================== RESUMEN MENSUAL ====================
+    function generateMonthlySummary() {
+      const now = new Date();
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      const monthName = now.toLocaleDateString('es-AR', { month: 'long', year: 'numeric' });
+      const today = now.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+      // Cuentas y balance total
+      const rate = appData.settings.exchangeRate;
+      let totalARS = 0;
+      const cuentasLines = appData.accounts.map(acc => {
+        const arsEquiv = acc.currency === 'USD' ? acc.balance * rate : acc.balance;
+        totalARS += arsEquiv;
+        const val = acc.currency === 'USD'
+          ? `US$${formatNumber(acc.balance)}  (≈ $${formatNumber(arsEquiv)})`
+          : `$${formatNumber(acc.balance)}`;
+        return `  ${acc.icon} ${acc.name.padEnd(20)} ${val}`;
+      });
+
+      // Stats del mes
+      let income = 0, expenses = 0;
+      const txsThisMonth = appData.transactions.filter(t => new Date(t.date) >= monthStart);
+      txsThisMonth.forEach(t => {
+        if (t.type === 'income') income += t.amount;
+        else if (t.type === 'expense') expenses += t.amount;
+      });
+
+      // Gastos por categoría (histórico completo)
+      const catTotals = {};
+      appData.transactions.filter(t => t.type === 'expense').forEach(t => {
+        catTotals[t.category] = (catTotals[t.category] || 0) + t.amount;
+      });
+      const totalGastos = Object.values(catTotals).reduce((a, b) => a + b, 0);
+      const catLines = appData.categories
+        .filter(c => catTotals[c.id])
+        .sort((a, b) => (catTotals[b.id] || 0) - (catTotals[a.id] || 0))
+        .map(cat => {
+          const amt = catTotals[cat.id];
+          const pct = totalGastos ? ((amt / totalGastos) * 100).toFixed(0) : 0;
+          return `  ${cat.emoji} ${cat.name.padEnd(18)} $${formatNumber(amt).padStart(12)}  (${pct}%)`;
+        });
+
+      // Metas
+      const goalLines = appData.goals.map(g => {
+        const pct = Math.min(Math.round((g.current / g.target) * 100), 100);
+        const bar = '█'.repeat(Math.round(pct / 10)) + '░'.repeat(10 - Math.round(pct / 10));
+        return `  ${g.emoji} ${g.name}\n     ${bar} ${pct}%\n     $${formatNumber(g.current)} de $${formatNumber(g.target)}`;
+      });
+
+      const sep = '─'.repeat(36);
+
+      const summary = [
+        `📊 RESUMEN FINANCIERO`,
+        `${monthName.charAt(0).toUpperCase() + monthName.slice(1)}`,
+        `Generado el ${today}`,
+        ``,
+        sep,
+        `💰 SALDOS`,
+        sep,
+        ...cuentasLines,
+        ``,
+        `  TOTAL  $${formatNumber(totalARS)} ARS`,
+        `         US$${formatNumber(totalARS / rate)} USD`,
+        ``,
+        sep,
+        `📅 ESTE MES`,
+        sep,
+        `  Ingresos     +$${formatNumber(income)}`,
+        `  Gastos        -$${formatNumber(expenses)}`,
+        `  Resultado    ${income - expenses >= 0 ? '+' : ''}$${formatNumber(income - expenses)}`,
+        ``,
+        sep,
+        `🗂 GASTOS POR CATEGORÍA (total histórico)`,
+        sep,
+        ...catLines,
+        ``,
+        sep,
+        `🎯 METAS DE AHORRO`,
+        sep,
+        ...(goalLines.length ? goalLines : ['  Sin metas registradas']),
+        ``,
+        `─────────────────────────────────────`,
+        `Dólar Blue: $${formatNumber(rate)} (promedio C/V)`,
+      ].join('\n');
+
+      return summary;
+    }
+
+    async function shareMonthlySummary() {
+      const text = generateMonthlySummary();
+      if (navigator.share) {
+        try {
+          await navigator.share({ title: 'Resumen financiero', text });
+        } catch (e) {
+          if (e.name !== 'AbortError') fallbackCopySummary(text);
+        }
+      } else {
+        fallbackCopySummary(text);
+      }
+    }
+
+    function fallbackCopySummary(text) {
+      navigator.clipboard?.writeText(text).then(() => {
+        showToast('Resumen copiado al portapapeles');
+      }).catch(() => {
+        // último recurso: descargar como .txt
+        const blob = new Blob([text], { type: 'text/plain' });
+        const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'resumen_finanzas.txt' });
+        a.click();
+      });
     }
 
     // ==================== SETTINGS ====================
