@@ -1071,6 +1071,18 @@
         </div>
       </div>
 
+      <div class="section-label">Cuentas</div>
+      <div class="group">
+        <div class="group-row" onclick="openReconcile()">
+          <div class="group-row-icon orange">⚖️</div>
+          <div class="group-row-body">
+            <div class="group-row-title">Ajustar saldos reales</div>
+            <div class="group-row-subtitle">Ingresar el saldo real de cada cuenta</div>
+          </div>
+          <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </div>
+
       <div class="section-label">Datos</div>
       <div class="group">
         <div class="group-row" onclick="exportData()">
@@ -1225,6 +1237,24 @@
     </div>
   </div>
 
+  <!-- ══════════════ MODAL: RECONCILE ══════════════ -->
+  <div class="modal-overlay" id="modal-reconcile">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title">Ajustar saldos reales</span>
+        <button class="modal-close-btn" onclick="closeModal('reconcile')">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:14px;color:var(--label-2);margin-bottom:20px;line-height:1.5">
+          Ingresá el saldo real de cada cuenta. La diferencia se registrará automáticamente como ingreso o gasto del mes pasado.
+        </p>
+        <div id="reconcile-inputs"></div>
+        <button class="btn-primary" onclick="saveReconcile()">Aplicar ajuste</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════ MODAL: GOAL ══════════════ -->
   <div class="modal-overlay" id="modal-goal">
     <div class="modal">
@@ -1292,22 +1322,9 @@
     const STORAGE_KEY = 'misfinanzas_data';
 
     const defaultData = {
-      accounts: [
-        { id: 1, name: 'Mercado Pago', type: 'wallet', currency: 'ARS', balance: 185000, icon: '📱' },
-        { id: 2, name: 'Caja de Ahorro', type: 'savings', currency: 'ARS', balance: 1500000, icon: '🏦' },
-        { id: 3, name: 'Dólares', type: 'savings', currency: 'USD', balance: 650, icon: '💵' }
-      ],
-      transactions: [
-        { id: 1, type: 'expense', amount: 15000, description: 'Supermercado Carrefour', category: 'food', accountId: 1, date: '2026-03-30' },
-        { id: 2, type: 'expense', amount: 8500, description: 'Nafta', category: 'transport', accountId: 1, date: '2026-03-29' },
-        { id: 3, type: 'income', amount: 850000, description: 'Sueldo Marzo', category: 'income', accountId: 2, date: '2026-03-28' },
-        { id: 4, type: 'expense', amount: 45000, description: 'Netflix + Spotify + Internet', category: 'services', accountId: 1, date: '2026-03-27' },
-        { id: 5, type: 'expense', amount: 22000, description: 'Cena con amigos', category: 'entertainment', accountId: 1, date: '2026-03-26' }
-      ],
-      goals: [
-        { id: 1, name: 'Viaje a Europa', emoji: '✈️', target: 3000000, current: 1200000, deadline: '2026-12-01' },
-        { id: 2, name: 'MacBook Pro', emoji: '💻', target: 2500000, current: 800000, deadline: '2026-08-01' }
-      ],
+      accounts: [],
+      transactions: [],
+      goals: [],
       categories: [
         { id: 'food',          name: 'Comida',        emoji: '🍔', color: '#FF9F0A' },
         { id: 'transport',     name: 'Transporte',    emoji: '🚗', color: '#0A84FF' },
@@ -1816,6 +1833,89 @@
         updateEl.textContent = 'Sin datos';
         if (dotEl) dotEl.className = 'exchange-dot stale';
       }
+    }
+
+    // ==================== AJUSTE DE SALDOS ====================
+    function openReconcile() {
+      const container = document.getElementById('reconcile-inputs');
+      if (!appData.accounts.length) {
+        showToast('No hay cuentas creadas');
+        return;
+      }
+      container.innerHTML = appData.accounts.map(acc => `
+        <div style="margin-bottom:20px">
+          <label class="form-label">${acc.icon} ${acc.name}
+            <span style="font-weight:400;text-transform:none;font-size:12px;color:var(--label-3)">
+              — actual: ${acc.currency === 'USD' ? 'US$' : '$'}${formatNumber(acc.balance)}
+            </span>
+          </label>
+          <input type="text"
+            class="form-input"
+            id="reconcile-${acc.id}"
+            placeholder="${acc.currency === 'USD' ? 'US$' : '$'}0"
+            inputmode="numeric"
+            style="font-size:20px;font-feature-settings:'tnum'"
+          >
+        </div>
+      `).join('');
+
+      // Formateo numérico en los inputs
+      appData.accounts.forEach(acc => {
+        const input = document.getElementById(`reconcile-${acc.id}`);
+        input.addEventListener('input', e => {
+          const v = e.target.value.replace(/\D/g, '');
+          e.target.value = v ? formatNumber(parseInt(v)) : '';
+        });
+      });
+
+      openModal('reconcile');
+    }
+
+    function saveReconcile() {
+      // Fecha del último día del mes pasado
+      const now = new Date();
+      const lastMonth = new Date(now.getFullYear(), now.getMonth(), 0); // día 0 = último del mes anterior
+      const dateStr = lastMonth.toISOString().split('T')[0];
+
+      let adjusted = 0;
+
+      appData.accounts.forEach(acc => {
+        const input = document.getElementById(`reconcile-${acc.id}`);
+        if (!input || input.value.trim() === '') return;
+
+        const realBalance = parseFloat(input.value.replace(/\D/g, '')) || 0;
+        const diff = realBalance - acc.balance;
+
+        if (diff === 0) return;
+
+        const absDiff = Math.abs(diff);
+        const isPositive = diff > 0;
+
+        appData.transactions.push({
+          id: Date.now() + acc.id,
+          type: isPositive ? 'income' : 'expense',
+          amount: absDiff,
+          description: isPositive ? 'Saldo a favor mes pasado' : 'Saldo en contra mes pasado',
+          category: isPositive ? 'income' : 'adjustment',
+          accountId: acc.id,
+          date: dateStr
+        });
+
+        acc.balance = realBalance;
+        adjusted++;
+      });
+
+      if (!adjusted) { showToast('No ingresaste ningún saldo'); return; }
+
+      // Asegurarse de que la categoría 'adjustment' exista
+      if (!appData.categories.find(c => c.id === 'adjustment')) {
+        appData.categories.push({ id: 'adjustment', name: 'Ajuste', emoji: '⚖️', color: '#FF9F0A' });
+      }
+
+      saveData();
+      closeModal('reconcile');
+      renderAll();
+      showToast(`${adjusted} cuenta${adjusted > 1 ? 's' : ''} ajustada${adjusted > 1 ? 's' : ''}`);
     }
 
     // ==================== RESUMEN MENSUAL ====================
