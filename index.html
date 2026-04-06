@@ -1097,6 +1097,18 @@
         </div>
       </div>
 
+      <div class="section-label">App</div>
+      <div class="group">
+        <div class="group-row" onclick="forceUpdate()">
+          <div class="group-row-icon blue">🔄</div>
+          <div class="group-row-body">
+            <div class="group-row-title">Forzar actualización</div>
+            <div class="group-row-subtitle">Descargar la última versión</div>
+          </div>
+          <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </div>
+
       <div class="section-label">Zona de peligro</div>
       <div class="group">
         <div class="group-row" onclick="clearData()">
@@ -2114,12 +2126,36 @@
     let newWorker = null;
 
     function applyUpdate() {
-      if (newWorker) newWorker.postMessage('skipWaiting');
+      if (newWorker) {
+        newWorker.postMessage('skipWaiting');
+      } else {
+        window.location.reload(true);
+      }
+    }
+
+    function forceUpdate() {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.getRegistration().then(reg => {
+          if (reg) {
+            reg.update().then(() => {
+              showToast('Buscando actualización...');
+              setTimeout(() => window.location.reload(true), 1500);
+            });
+          } else {
+            window.location.reload(true);
+          }
+        });
+      } else {
+        window.location.reload(true);
+      }
     }
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('/MisFinanzas/sw.js').then(reg => {
+          // Chequear actualización cada vez que abre la app
+          reg.update();
+
           reg.addEventListener('updatefound', () => {
             newWorker = reg.installing;
             newWorker.addEventListener('statechange', () => {
@@ -2128,11 +2164,17 @@
               }
             });
           });
+
+          // Si ya hay un waiting worker (de una sesión previa), mostrar banner
+          if (reg.waiting && navigator.serviceWorker.controller) {
+            newWorker = reg.waiting;
+            document.getElementById('update-banner').style.display = 'flex';
+          }
         }).catch(err => console.log('SW:', err));
 
-        // Recargar cuando el nuevo SW tome control
+        let reloading = false;
         navigator.serviceWorker.addEventListener('controllerchange', () => {
-          window.location.reload();
+          if (!reloading) { reloading = true; window.location.reload(); }
         });
       });
     }

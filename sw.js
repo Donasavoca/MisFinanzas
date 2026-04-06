@@ -1,8 +1,6 @@
-const CACHE_VERSION = '2026-04-06-2';
+const CACHE_VERSION = '2026-04-06-3';
 const CACHE_NAME = `misfinanzas-${CACHE_VERSION}`;
-const ASSETS = [
-  '/MisFinanzas/',
-  '/MisFinanzas/index.html',
+const STATIC_ASSETS = [
   '/MisFinanzas/manifest.json',
   '/MisFinanzas/icons/icon-192.png',
   '/MisFinanzas/icons/icon-512.png',
@@ -11,9 +9,9 @@ const ASSETS = [
 
 self.addEventListener('install', event => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS))
+    caches.open(CACHE_NAME).then(cache => cache.addAll(STATIC_ASSETS))
   );
-  self.skipWaiting();
+  // NO skipWaiting aquí — dejamos que el banner controle cuándo activar
 });
 
 self.addEventListener('activate', event => {
@@ -26,6 +24,23 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+  const url = new URL(event.request.url);
+
+  // Navegación (HTML): siempre red primero, caché como fallback
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then(response => {
+          const clone = response.clone();
+          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          return response;
+        })
+        .catch(() => caches.match(event.request))
+    );
+    return;
+  }
+
+  // Assets estáticos: caché primero, luego red
   event.respondWith(
     caches.match(event.request).then(cached => {
       if (cached) return cached;
@@ -34,12 +49,13 @@ self.addEventListener('fetch', event => {
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
-      }).catch(() => caches.match('/MisFinanzas/'));
+      }).catch(() => cached);
     })
   );
 });
 
-// Notificar a la app cuando hay una nueva versión instalada
 self.addEventListener('message', event => {
-  if (event.data === 'skipWaiting') self.skipWaiting();
+  if (event.data === 'skipWaiting') {
+    self.skipWaiting();
+  }
 });
