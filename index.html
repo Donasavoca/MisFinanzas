@@ -1296,15 +1296,15 @@
     <!-- Home Page -->
     <div id="page-home" class="page active">
       <!-- Exchange Rate Banner -->
-      <div class="exchange-banner">
+      <div class="exchange-banner" onclick="fetchExchangeRate()" style="cursor:pointer" title="Tocar para forzar actualización">
         <div class="exchange-info">
           <span class="exchange-icon">💱</span>
           <div>
-            <div class="exchange-label">Dólar Blue</div>
+            <div class="exchange-label">Dólar Blue <span id="exchange-prices" style="font-size:11px;color:var(--text-muted);margin-left:4px"></span></div>
             <div class="exchange-rate" id="exchange-rate">$1.200</div>
           </div>
         </div>
-        <div class="exchange-update" id="exchange-update">Actualizado hace 2min</div>
+        <div class="exchange-update" id="exchange-update">Cargando...</div>
       </div>
 
       <!-- Balance Section -->
@@ -1762,7 +1762,10 @@
       recurring: [],
       settings: {
         currency: 'ARS',
-        exchangeRate: 1200
+        exchangeRate: 1200,
+        exchangeLastUpdate: null,
+        exchangeCompra: null,
+        exchangeVenta: null
       }
     };
 
@@ -2425,9 +2428,102 @@
       }, 1500);
     }
 
+    // ==================== TIPO DE CAMBIO ====================
+    const EXCHANGE_UPDATE_DAYS = 3;
+
+    function shouldUpdateExchange() {
+      const last = appData.settings.exchangeLastUpdate;
+      if (!last) return true;
+      const diffMs = Date.now() - new Date(last).getTime();
+      const diffDays = diffMs / (1000 * 60 * 60 * 24);
+      return diffDays >= EXCHANGE_UPDATE_DAYS;
+    }
+
+    async function fetchExchangeRate() {
+      if (!shouldUpdateExchange()) {
+        updateExchangeRateUI();
+        return;
+      }
+
+      updateExchangeRateUI('Actualizando...');
+
+      try {
+        // Fuente principal: dolarapi.com
+        const res = await fetch('https://dolarapi.com/v1/dolares/blue');
+        if (!res.ok) throw new Error('dolarapi falló');
+        const data = await res.json();
+        applyExchangeRate(data.compra, data.venta, 'dolarapi.com');
+        return;
+      } catch (_) {}
+
+      try {
+        // Fallback: bluelytics.com.ar
+        const res = await fetch('https://api.bluelytics.com.ar/v2/latest');
+        if (!res.ok) throw new Error('bluelytics falló');
+        const data = await res.json();
+        applyExchangeRate(data.blue.value_buy, data.blue.value_sell, 'bluelytics.com.ar');
+        return;
+      } catch (_) {}
+
+      // Si ambas fallan, usamos el valor guardado
+      updateExchangeRateUI();
+    }
+
+    function applyExchangeRate(compra, venta, source) {
+      const promedio = Math.round((compra + venta) / 2);
+      appData.settings.exchangeRate = promedio;
+      appData.settings.exchangeCompra = compra;
+      appData.settings.exchangeVenta = venta;
+      appData.settings.exchangeLastUpdate = new Date().toISOString();
+      saveData();
+      renderAll();
+      updateExchangeRateUI();
+      console.log(`Tipo de cambio actualizado desde ${source}: compra $${compra} / venta $${venta} / promedio $${promedio}`);
+    }
+
     function updateExchangeRate() {
-      // In real app, fetch from API
-      document.getElementById('exchange-rate').textContent = `$${formatNumber(appData.settings.exchangeRate)}`;
+      updateExchangeRateUI();
+    }
+
+    function updateExchangeRateUI(status) {
+      const rateEl = document.getElementById('exchange-rate');
+      const updateEl = document.getElementById('exchange-update');
+
+      if (status) {
+        updateEl.textContent = status;
+        return;
+      }
+
+      const { exchangeRate, exchangeCompra, exchangeVenta, exchangeLastUpdate } = appData.settings;
+
+      rateEl.textContent = `$${formatNumber(exchangeRate)}`;
+
+      const pricesEl = document.getElementById('exchange-prices');
+      if (exchangeCompra && exchangeVenta && pricesEl) {
+        pricesEl.textContent = `C $${formatNumber(exchangeCompra)} / V $${formatNumber(exchangeVenta)}`;
+      }
+
+      if (exchangeLastUpdate) {
+        const last = new Date(exchangeLastUpdate);
+        const now = new Date();
+        const diffMs = now - last;
+        const diffMin = Math.floor(diffMs / 60000);
+        const diffHrs = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        let label;
+        if (diffMin < 2) label = 'Actualizado ahora';
+        else if (diffMin < 60) label = `Hace ${diffMin} min`;
+        else if (diffHrs < 24) label = `Hace ${diffHrs}h`;
+        else label = `Hace ${diffDays} día${diffDays > 1 ? 's' : ''}`;
+
+        const nextUpdate = new Date(last.getTime() + EXCHANGE_UPDATE_DAYS * 86400000);
+        const nextStr = nextUpdate.toLocaleDateString('es-AR', { day: 'numeric', month: 'short' });
+        updateEl.textContent = `${label} · próx. ${nextStr}`;
+        updateEl.title = `Próxima actualización: ${nextStr}`;
+      } else {
+        updateEl.textContent = 'Sin actualizar';
+      }
     }
 
     // ==================== RENDER ALL ====================
@@ -2443,7 +2539,8 @@
     // ==================== INIT ====================
     document.addEventListener('DOMContentLoaded', () => {
       renderAll();
-      
+      fetchExchangeRate();
+
       // Format amount inputs
       document.querySelectorAll('.form-input.amount').forEach(input => {
         input.addEventListener('input', (e) => {
