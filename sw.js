@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2026-04-06-1';
+const CACHE_VERSION = '2026-04-06-2';
 const CACHE_NAME = `misfinanzas-${CACHE_VERSION}`;
 const ASSETS = [
   '/MisFinanzas/',
