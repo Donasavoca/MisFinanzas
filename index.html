@@ -1226,6 +1226,23 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Banner de nueva versión disponible -->
+  <div id="update-banner" style="
+    display:none; position:fixed; top:0; left:0; right:0; z-index:400;
+    background:var(--blue); color:#fff;
+    padding: calc(env(safe-area-inset-top) + 12px) 20px 12px;
+    display:none; align-items:center; justify-content:space-between;
+    font-size:14px; font-weight:500;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+  ">
+    <span>Nueva versión disponible</span>
+    <button onclick="applyUpdate()" style="
+      background:rgba(255,255,255,0.2); border:none; color:#fff;
+      padding:6px 14px; border-radius:20px; font-size:13px;
+      font-weight:600; cursor:pointer; font-family:var(--font);
+    ">Actualizar</button>
+  </div>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
     // ==================== DATA STORE ====================
@@ -1819,10 +1836,29 @@
       row.addEventListener('touchmove', () => clearTimeout(timer), { once: true });
     });
 
+    let newWorker = null;
+
+    function applyUpdate() {
+      if (newWorker) newWorker.postMessage('skipWaiting');
+    }
+
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/MisFinanzas/sw.js')
-          .catch(err => console.log('SW:', err));
+        navigator.serviceWorker.register('/MisFinanzas/sw.js').then(reg => {
+          reg.addEventListener('updatefound', () => {
+            newWorker = reg.installing;
+            newWorker.addEventListener('statechange', () => {
+              if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                document.getElementById('update-banner').style.display = 'flex';
+              }
+            });
+          });
+        }).catch(err => console.log('SW:', err));
+
+        // Recargar cuando el nuevo SW tome control
+        navigator.serviceWorker.addEventListener('controllerchange', () => {
+          window.location.reload();
+        });
       });
     }
   </script>

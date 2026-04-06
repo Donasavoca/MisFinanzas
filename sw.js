@@ -1,10 +1,12 @@
-const CACHE_NAME = 'misfinanzas-v1';
+const CACHE_VERSION = '2026-04-06-1';
+const CACHE_NAME = `misfinanzas-${CACHE_VERSION}`;
 const ASSETS = [
   '/MisFinanzas/',
   '/MisFinanzas/index.html',
   '/MisFinanzas/manifest.json',
-  'https://cdn.jsdelivr.net/npm/chart.js',
-  'https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap'
+  '/MisFinanzas/icons/icon-192.png',
+  '/MisFinanzas/icons/icon-512.png',
+  'https://cdn.jsdelivr.net/npm/chart.js'
 ];
 
 self.addEventListener('install', event => {
@@ -28,13 +30,16 @@ self.addEventListener('fetch', event => {
     caches.match(event.request).then(cached => {
       if (cached) return cached;
       return fetch(event.request).then(response => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response;
-        }
+        if (!response || response.status !== 200 || response.type === 'opaque') return response;
         const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
         return response;
       }).catch(() => caches.match('/MisFinanzas/'));
     })
   );
+});
+
+// Notificar a la app cuando hay una nueva versión instalada
+self.addEventListener('message', event => {
+  if (event.data === 'skipWaiting') self.skipWaiting();
 });
