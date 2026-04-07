@@ -927,21 +927,79 @@
       .balance-hero-amount { font-size: 44px; }
       .chip-grid { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* ══════════════════════════════════════
+       LOGIN SCREEN
+    ══════════════════════════════════════ */
+    #login-screen {
+      position: fixed; inset: 0; background: var(--bg); z-index: 500;
+      display: none; flex-direction: column; align-items: center; justify-content: center;
+      padding-left: 24px; padding-right: 24px;
+      padding-top: calc(40px + env(safe-area-inset-top));
+      padding-bottom: calc(40px + env(safe-area-inset-bottom));
+    }
+    #login-screen.visible { display: flex; }
+    .login-sent-wrap { display: none; flex-direction: column; align-items: center; text-align: center; }
+    .login-sent-wrap.visible { display: flex; }
+
+    /* ══════════════════════════════════════
+       SYNC INDICATOR
+    ══════════════════════════════════════ */
+    .sync-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--label-3); flex-shrink: 0; transition: background 0.3s;
+    }
+    .sync-dot.synced  { background: var(--green); }
+    .sync-dot.syncing { background: var(--orange); animation: blink 1.2s ease-in-out infinite; }
+    .sync-dot.offline { background: var(--orange); }
+    .sync-dot.error   { background: var(--red); }
+    @keyframes blink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+
   </style>
 </head>
 <body>
+
+  <!-- ══════════════ LOGIN SCREEN ══════════════ -->
+  <div id="login-screen">
+    <div id="login-form-wrap" style="width:100%;display:flex;flex-direction:column;align-items:center;">
+      <div style="font-size:64px;margin-bottom:20px">💰</div>
+      <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px">Mis Finanzas</h1>
+      <p style="font-size:15px;color:var(--label-2);margin-bottom:40px;text-align:center;line-height:1.6;max-width:280px">
+        Ingresá tu email para recibir un enlace de acceso seguro
+      </p>
+      <div style="width:100%;max-width:320px">
+        <input type="email" id="login-email" class="form-input" placeholder="tu@email.com"
+          style="margin-bottom:12px;font-size:17px;" autocomplete="email" inputmode="email">
+        <button class="btn-primary" id="login-btn" onclick="sendMagicLink()">Enviar enlace</button>
+      </div>
+    </div>
+    <div id="login-sent-wrap" class="login-sent-wrap">
+      <div style="font-size:56px;margin-bottom:20px">📬</div>
+      <h2 style="font-size:22px;font-weight:700;margin-bottom:10px">Revisá tu email</h2>
+      <p style="font-size:15px;color:var(--label-2);line-height:1.6;max-width:280px">
+        Te enviamos un enlace de acceso. Tocalo para ingresar a la app.
+      </p>
+      <button onclick="showLoginForm()"
+        style="margin-top:32px;background:none;border:none;color:var(--blue);font-size:15px;font-family:var(--font);cursor:pointer;">
+        Usar otro email
+      </button>
+    </div>
+  </div>
 
   <!-- ══════════════ HOME ══════════════ -->
   <div id="page-home" class="page active">
     <div class="nav-bar">
       <div class="nav-bar-inner">
         <span class="nav-title">Finanzas</span>
-        <button class="nav-btn" onclick="showPage('settings')" aria-label="Configuración">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
-            <circle cx="12" cy="12" r="3"/>
-            <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
-          </svg>
-        </button>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="sync-dot" id="sync-indicator" title="Sin sincronización"></div>
+          <button class="nav-btn" onclick="showPage('settings')" aria-label="Configuración">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <circle cx="12" cy="12" r="3"/>
+              <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1105,6 +1163,22 @@
             <div class="group-row-title">Forzar actualización</div>
             <div class="group-row-subtitle">Descargar la última versión</div>
           </div>
+          <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+        </div>
+      </div>
+
+      <div class="section-label" id="account-section-label" style="display:none">Cuenta</div>
+      <div class="group" id="account-section-group" style="display:none">
+        <div class="group-row" style="pointer-events:none">
+          <div class="group-row-icon gray">👤</div>
+          <div class="group-row-body">
+            <div class="group-row-title">Sesión activa</div>
+            <div class="group-row-subtitle" id="settings-user-email">—</div>
+          </div>
+        </div>
+        <div class="group-row" onclick="signOut()">
+          <div class="group-row-icon red">🚪</div>
+          <div class="group-row-body"><div class="group-row-title" style="color:var(--red)">Cerrar sesión</div></div>
           <div class="chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
         </div>
       </div>
@@ -1328,10 +1402,27 @@
     ">Actualizar</button>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script>
+    // ==================== SUPABASE CONFIG ====================
+    // 1. Creá tu proyecto en https://supabase.com (gratis)
+    // 2. En el SQL Editor, ejecutá el script de setup que está en supabase_setup.sql
+    // 3. Reemplazá los valores de abajo (Settings → API de tu proyecto)
+    const SUPABASE_URL  = 'https://gidlgqlkvmcyivxuqcru.supabase.co';
+    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdpZGxncWxrdm1jeWl2eHVxY3J1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzU1MjYyMDIsImV4cCI6MjA5MTEwMjIwMn0.FLIXiQkzfhUf8Fguh5GQ0EVyENdKE7bonD-v4HEXs7U';
+
+    let supabaseClient = null;
+    let currentUser    = null;
+
+    function initSupabase() {
+      if (SUPABASE_URL === 'TU_SUPABASE_URL') return; // aún no configurado
+      supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+    }
+
     // ==================== DATA STORE ====================
-    const STORAGE_KEY = 'misfinanzas_data';
+    const STORAGE_KEY       = 'misfinanzas_data';
+    const OFFLINE_QUEUE_KEY = 'misfinanzas_sync_pending';
 
     const defaultData = {
       accounts: [],
@@ -1370,11 +1461,168 @@
     function loadData() {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return JSON.parse(saved);
-      return defaultData;
+      return JSON.parse(JSON.stringify(defaultData));
     }
 
     function saveData() {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+      pushToSupabase(); // async, fire-and-forget
+    }
+
+    // ==================== SUPABASE SYNC ====================
+    async function loadDataFromSupabase() {
+      if (!supabaseClient || !currentUser) return;
+      updateSyncStatus('syncing');
+      try {
+        const { data, error } = await supabaseClient
+          .from('user_data')
+          .select('data')
+          .eq('user_id', currentUser.id)
+          .single();
+        if (data && data.data) {
+          appData = { ...JSON.parse(JSON.stringify(defaultData)), ...data.data };
+          if (!appData.categories || !appData.categories.length)
+            appData.categories = JSON.parse(JSON.stringify(defaultData.categories));
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+          renderAll();
+        }
+        updateSyncStatus('synced');
+      } catch (e) {
+        updateSyncStatus('error');
+      }
+    }
+
+    async function pushToSupabase() {
+      if (!supabaseClient || !currentUser) return;
+      if (!navigator.onLine) {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, 'pending');
+        updateSyncStatus('offline');
+        return;
+      }
+      updateSyncStatus('syncing');
+      try {
+        const { error } = await supabaseClient
+          .from('user_data')
+          .upsert({ user_id: currentUser.id, data: appData, updated_at: new Date().toISOString() });
+        if (error) throw error;
+        localStorage.removeItem(OFFLINE_QUEUE_KEY);
+        updateSyncStatus('synced');
+      } catch (e) {
+        localStorage.setItem(OFFLINE_QUEUE_KEY, 'pending');
+        updateSyncStatus('error');
+      }
+    }
+
+    async function processOfflineQueue() {
+      if (localStorage.getItem(OFFLINE_QUEUE_KEY) === 'pending') {
+        await pushToSupabase();
+      }
+    }
+
+    function setupRealtime() {
+      if (!supabaseClient || !currentUser) return;
+      supabaseClient
+        .channel('user_data_changes')
+        .on('postgres_changes', {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'user_data',
+          filter: `user_id=eq.${currentUser.id}`
+        }, (payload) => {
+          if (!payload.new || !payload.new.data) return;
+          const incoming = JSON.stringify(payload.new.data);
+          const local    = JSON.stringify(appData);
+          if (incoming !== local) {
+            appData = { ...JSON.parse(JSON.stringify(defaultData)), ...payload.new.data };
+            if (!appData.categories || !appData.categories.length)
+              appData.categories = JSON.parse(JSON.stringify(defaultData.categories));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
+            renderAll();
+            showToast('Datos sincronizados');
+          }
+        })
+        .subscribe();
+    }
+
+    function updateSyncStatus(status) {
+      const dot = document.getElementById('sync-indicator');
+      if (!dot) return;
+      dot.className = 'sync-dot ' + status;
+      const labels = { synced: 'Sincronizado', syncing: 'Sincronizando...', offline: 'Sin conexión', error: 'Error de sync' };
+      dot.title = labels[status] || '';
+    }
+
+    // ==================== AUTH ====================
+    async function checkAuth() {
+      if (!supabaseClient) { showApp(); return; }
+
+      // Escuchar cambios de sesión (incluye callback de magic link)
+      supabaseClient.auth.onAuthStateChange(async (event, session) => {
+        if (event === 'SIGNED_IN' && session) {
+          currentUser = session.user;
+          showApp();
+          showAccountSection(currentUser.email);
+          setupRealtime();
+          await loadDataFromSupabase();
+        } else if (event === 'SIGNED_OUT') {
+          currentUser = null;
+          showLoginScreen();
+        }
+      });
+
+      const { data: { session } } = await supabaseClient.auth.getSession();
+      if (session) {
+        currentUser = session.user;
+        showApp();
+        showAccountSection(currentUser.email);
+        setupRealtime();
+        await loadDataFromSupabase();
+      } else {
+        showLoginScreen();
+      }
+    }
+
+    async function sendMagicLink() {
+      const email = document.getElementById('login-email').value.trim();
+      if (!email || !email.includes('@')) { showToast('Ingresá un email válido'); return; }
+      const btn = document.getElementById('login-btn');
+      btn.textContent = 'Enviando...';
+      btn.disabled = true;
+      const redirectTo = window.location.origin + window.location.pathname;
+      const { error } = await supabaseClient.auth.signInWithOtp({
+        email,
+        options: { emailRedirectTo: redirectTo }
+      });
+      btn.textContent = 'Enviar enlace';
+      btn.disabled = false;
+      if (error) { showToast('Error al enviar el email'); return; }
+      document.getElementById('login-form-wrap').style.display = 'none';
+      document.getElementById('login-sent-wrap').classList.add('visible');
+    }
+
+    async function signOut() {
+      if (!supabaseClient) return;
+      if (!confirm('¿Cerrar sesión?')) return;
+      await supabaseClient.auth.signOut();
+    }
+
+    function showLoginScreen() {
+      document.getElementById('login-screen').classList.add('visible');
+    }
+
+    function showApp() {
+      document.getElementById('login-screen').classList.remove('visible');
+    }
+
+    function showLoginForm() {
+      document.getElementById('login-form-wrap').style.display = 'flex';
+      document.getElementById('login-sent-wrap').classList.remove('visible');
+    }
+
+    function showAccountSection(email) {
+      document.getElementById('account-section-label').style.display = '';
+      document.getElementById('account-section-group').style.display = '';
+      document.getElementById('settings-user-email').textContent = email;
     }
 
     // ==================== UI ====================
@@ -2062,12 +2310,15 @@
       input.click();
     }
 
-    function clearData() {
-      if (confirm('¿Borrar todos los datos?')) {
-        localStorage.removeItem(STORAGE_KEY);
-        appData = JSON.parse(JSON.stringify(defaultData));
-        saveData(); renderAll(); showToast('Datos borrados');
+    async function clearData() {
+      if (!confirm('¿Borrar todos los datos?')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OFFLINE_QUEUE_KEY);
+      appData = JSON.parse(JSON.stringify(defaultData));
+      if (supabaseClient && currentUser) {
+        await supabaseClient.from('user_data').delete().eq('user_id', currentUser.id);
       }
+      saveData(); renderAll(); showToast('Datos borrados');
     }
 
     // ==================== RENDER ALL ====================
@@ -2081,7 +2332,8 @@
     }
 
     // ==================== INIT ====================
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', async () => {
+      initSupabase();
       renderAll();
       fetchExchangeRate();
 
@@ -2091,6 +2343,11 @@
           e.target.value = v ? formatNumber(parseInt(v)) : '';
         });
       });
+
+      await checkAuth();
+
+      window.addEventListener('online',  () => { processOfflineQueue(); });
+      window.addEventListener('offline', () => { if (currentUser) updateSyncStatus('offline'); });
     });
 
     // Swipe izquierda para borrar (iOS nativo)
