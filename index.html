@@ -961,26 +961,34 @@
 
   <!-- ══════════════ LOGIN SCREEN ══════════════ -->
   <div id="login-screen">
+    <!-- Paso 1: email -->
     <div id="login-form-wrap" style="width:100%;display:flex;flex-direction:column;align-items:center;">
       <div style="font-size:64px;margin-bottom:20px">💰</div>
       <h1 style="font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:8px">Mis Finanzas</h1>
       <p style="font-size:15px;color:var(--label-2);margin-bottom:40px;text-align:center;line-height:1.6;max-width:280px">
-        Ingresá tu email para recibir un enlace de acceso seguro
+        Ingresá tu email para recibir un código de acceso
       </p>
       <div style="width:100%;max-width:320px">
         <input type="email" id="login-email" class="form-input" placeholder="tu@email.com"
           style="margin-bottom:12px;font-size:17px;" autocomplete="email" inputmode="email">
-        <button class="btn-primary" id="login-btn" onclick="sendMagicLink()">Enviar enlace</button>
+        <button class="btn-primary" id="login-btn" onclick="sendOTP()">Enviar código</button>
       </div>
     </div>
-    <div id="login-sent-wrap" class="login-sent-wrap">
+    <!-- Paso 2: código OTP -->
+    <div id="login-otp-wrap" class="login-sent-wrap">
       <div style="font-size:56px;margin-bottom:20px">📬</div>
       <h2 style="font-size:22px;font-weight:700;margin-bottom:10px">Revisá tu email</h2>
-      <p style="font-size:15px;color:var(--label-2);line-height:1.6;max-width:280px">
-        Te enviamos un enlace de acceso. Tocalo para ingresar a la app.
+      <p style="font-size:15px;color:var(--label-2);line-height:1.6;max-width:280px;margin-bottom:28px">
+        Te enviamos un código de 6 dígitos. Ingresalo acá:
       </p>
+      <div style="width:100%;max-width:320px">
+        <input type="text" id="login-otp" class="form-input" placeholder="000000"
+          style="margin-bottom:12px;font-size:28px;letter-spacing:8px;text-align:center;font-feature-settings:'tnum'"
+          inputmode="numeric" maxlength="6" autocomplete="one-time-code">
+        <button class="btn-primary" id="otp-btn" onclick="verifyOTP()">Verificar</button>
+      </div>
       <button onclick="showLoginForm()"
-        style="margin-top:32px;background:none;border:none;color:var(--blue);font-size:15px;font-family:var(--font);cursor:pointer;">
+        style="margin-top:24px;background:none;border:none;color:var(--blue);font-size:15px;font-family:var(--font);cursor:pointer;">
         Usar otro email
       </button>
     </div>
@@ -1582,22 +1590,36 @@
       }
     }
 
-    async function sendMagicLink() {
+    async function sendOTP() {
       const email = document.getElementById('login-email').value.trim();
       if (!email || !email.includes('@')) { showToast('Ingresá un email válido'); return; }
       const btn = document.getElementById('login-btn');
       btn.textContent = 'Enviando...';
       btn.disabled = true;
-      const redirectTo = window.location.origin + window.location.pathname;
       const { error } = await supabaseClient.auth.signInWithOtp({
         email,
-        options: { emailRedirectTo: redirectTo }
+        options: { shouldCreateUser: true }
       });
-      btn.textContent = 'Enviar enlace';
+      btn.textContent = 'Enviar código';
       btn.disabled = false;
-      if (error) { showToast('Error al enviar el email'); return; }
+      if (error) { showToast('Error al enviar el código'); return; }
       document.getElementById('login-form-wrap').style.display = 'none';
-      document.getElementById('login-sent-wrap').classList.add('visible');
+      document.getElementById('login-otp-wrap').classList.add('visible');
+      setTimeout(() => document.getElementById('login-otp')?.focus(), 300);
+    }
+
+    async function verifyOTP() {
+      const email = document.getElementById('login-email').value.trim();
+      const token = document.getElementById('login-otp').value.trim();
+      if (token.length !== 6) { showToast('El código es de 6 dígitos'); return; }
+      const btn = document.getElementById('otp-btn');
+      btn.textContent = 'Verificando...';
+      btn.disabled = true;
+      const { error } = await supabaseClient.auth.verifyOtp({ email, token, type: 'email' });
+      btn.textContent = 'Verificar';
+      btn.disabled = false;
+      if (error) { showToast('Código incorrecto o expirado'); return; }
+      // onAuthStateChange maneja el login automáticamente
     }
 
     async function signOut() {
@@ -1616,7 +1638,8 @@
 
     function showLoginForm() {
       document.getElementById('login-form-wrap').style.display = 'flex';
-      document.getElementById('login-sent-wrap').classList.remove('visible');
+      document.getElementById('login-otp-wrap').classList.remove('visible');
+      document.getElementById('login-otp').value = '';
     }
 
     function showAccountSection(email) {
