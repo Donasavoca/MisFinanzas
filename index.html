@@ -847,7 +847,7 @@
       font-weight: 500;
       opacity: 0;
       transition: all 0.25s ease;
-      z-index: 300;
+      z-index: 600;
       white-space: nowrap;
       box-shadow: 0 4px 24px rgba(0,0,0,0.5);
     }
@@ -1602,7 +1602,7 @@
       });
       btn.textContent = 'Enviar código';
       btn.disabled = false;
-      if (error) { showToast('Error al enviar el código'); return; }
+      if (error) { showToast('Error: ' + error.message); return; }
       document.getElementById('login-form-wrap').style.display = 'none';
       document.getElementById('login-otp-wrap').classList.add('visible');
       setTimeout(() => document.getElementById('login-otp')?.focus(), 300);
