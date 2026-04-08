@@ -1707,30 +1707,52 @@
       }
     }
 
+    let realtimeChannel = null;
+
     function setupRealtime() {
       if (!supabaseClient || !currentUser) return;
-      supabaseClient
-        .channel('user_data_changes')
+      // Evitar suscripciones duplicadas
+      if (realtimeChannel) return;
+
+      realtimeChannel = supabaseClient
+        .channel(`user_data_${currentUser.id}`)
         .on('postgres_changes', {
-          event: 'UPDATE',
+          event: '*',
           schema: 'public',
           table: 'user_data',
           filter: `user_id=eq.${currentUser.id}`
         }, (payload) => {
-          if (!payload.new || !payload.new.data) return;
-          const incoming = JSON.stringify(payload.new.data);
+          const newData = payload.new?.data;
+          if (!newData) return;
+          const incoming = JSON.stringify(newData);
           const local    = JSON.stringify(appData);
           if (incoming !== local) {
-            appData = { ...JSON.parse(JSON.stringify(defaultData)), ...payload.new.data };
-            if (!appData.categories || !appData.categories.length)
+            appData = { ...JSON.parse(JSON.stringify(defaultData)), ...newData };
+            if (!appData.categories?.length)
               appData.categories = JSON.parse(JSON.stringify(defaultData.categories));
             localStorage.setItem(STORAGE_KEY, JSON.stringify(appData));
             renderAll();
-            showToast('Datos sincronizados');
+            showToast('Datos sincronizados ✓');
           }
         })
-        .subscribe();
+        .subscribe((status, err) => {
+          if (status === 'SUBSCRIBED') updateSyncStatus('synced');
+          if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+            updateSyncStatus('error');
+            // Reintentar reconexión en 5s
+            realtimeChannel = null;
+            setTimeout(() => setupRealtime(), 5000);
+          }
+        });
     }
+
+    // Al volver al foco (cambiar de pestaña o desbloquear el celular),
+    // hacer un pull fresco para no quedarse desactualizado
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && currentUser) {
+        loadDataFromSupabase();
+      }
+    });
 
     function updateSyncStatus(status) {
       const dot = document.getElementById('sync-indicator');
@@ -1804,6 +1826,10 @@
 
     async function signOut() {
       if (!supabaseClient) return;
+      if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+        realtimeChannel = null;
+      }
       if (!confirm('¿Cerrar sesión?')) return;
       await supabaseClient.auth.signOut();
     }
