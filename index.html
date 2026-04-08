@@ -904,8 +904,11 @@
     .acc-row.swiped .acc-row-inner     { transform: translateX(-64px); }
     .acc-row.swiped .acc-options-reveal { transform: translateX(0); }
 
-    /* desktop: hover muestra botón sutil */
+    /* desktop: el botón está fijo a la derecha, el inner hace lugar */
     @media (hover: hover) {
+      .tx-row-inner, .acc-row-inner {
+        padding-right: 52px;
+      }
       .tx-options-reveal, .acc-options-reveal {
         width: 44px;
         transform: translateX(0);
