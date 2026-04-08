@@ -143,32 +143,43 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      justify-content: center;
-      gap: 3px;
-      padding: 10px 0;
+      justify-content: flex-start;
+      padding: 0;
+      padding-top: 0;
       cursor: pointer;
       border: none;
       background: none;
       font-family: var(--font);
+      position: relative;
+      margin-top: -22px; /* sobresale por encima de la barra */
     }
 
     .tab-add-icon {
-      width: 32px;
-      height: 32px;
+      width: 58px;
+      height: 58px;
       border-radius: 50%;
       background: var(--blue);
       display: flex;
       align-items: center;
       justify-content: center;
+      box-shadow: 0 4px 16px rgba(10,132,255,0.5);
+      border: 3px solid rgba(28,28,30,0.94);
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
     }
 
-    .tab-add-icon svg { width: 18px; height: 18px; color: #fff; }
+    .tab-add:active .tab-add-icon {
+      transform: scale(0.92);
+      box-shadow: 0 2px 8px rgba(10,132,255,0.4);
+    }
+
+    .tab-add-icon svg { width: 24px; height: 24px; color: #fff; }
 
     .tab-add span {
       font-size: 10px;
       font-weight: 500;
       color: var(--blue);
       letter-spacing: 0.2px;
+      margin-top: 3px;
     }
 
     /* ══════════════════════════════════════
@@ -2032,7 +2043,11 @@
 
     function openModal(type) {
       document.getElementById(`modal-${type}`).classList.add('active');
-      if (type === 'transaction') { renderCategoryGrid(); renderAccountSelect(); }
+      if (type === 'transaction') {
+        setTransactionType('expense'); // siempre arranca en Gasto
+        renderCategoryGrid();
+        renderAccountSelect();
+      }
       if (type === 'bill') { selectedCompanyId = null; renderCompanyGrid(); }
     }
 
