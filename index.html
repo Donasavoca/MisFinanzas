@@ -1993,6 +1993,19 @@
 
     function showApp() {
       document.getElementById('login-screen').classList.remove('visible');
+      // Deep link: ?add=1 abre el modal de nueva transacción
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('add') === '1') {
+        setTimeout(() => {
+          openModal('transaction');
+          renderCategoryGrid();
+          renderAccountSelect();
+          const amt = params.get('amount');
+          const desc = params.get('desc');
+          if (amt) document.getElementById('transaction-amount').value = formatNumber(parseInt(amt.replace(/\D/g,'')));
+          if (desc) document.getElementById('transaction-description').value = desc;
+        }, 400);
+      }
     }
 
     function showLoginForm() {
@@ -2890,20 +2903,6 @@
       });
 
       await checkAuth();
-
-      // Shortcut de acceso rápido: ?add=1 abre el modal directo
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('add') === '1') {
-        setTimeout(() => {
-          openModal('transaction');
-          renderCategoryGrid();
-          renderAccountSelect();
-          const amt = params.get('amount');
-          const desc = params.get('desc');
-          if (amt) document.getElementById('transaction-amount').value = formatNumber(parseInt(amt));
-          if (desc) document.getElementById('transaction-description').value = desc;
-        }, 300);
-      }
 
       window.addEventListener('online',  () => { processOfflineQueue(); });
       window.addEventListener('offline', () => { if (currentUser) updateSyncStatus('offline'); });
