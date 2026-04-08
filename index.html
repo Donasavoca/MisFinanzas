@@ -2003,13 +2003,20 @@
       // onAuthStateChange maneja el login automáticamente
     }
 
-    async function signOut() {
+    function signOut() {
+      openActionSheet('¿Cerrar sesión?', [
+        { label: 'Cerrar sesión', danger: true, action: 'doSignOut()' }
+      ]);
+    }
+
+    async function doSignOut() {
+      closeActionSheet();
       if (!supabaseClient) return;
       if (realtimeChannel) {
         supabaseClient.removeChannel(realtimeChannel);
         realtimeChannel = null;
       }
-      if (!confirm('¿Cerrar sesión?')) return;
+      if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
       await supabaseClient.auth.signOut();
     }
 
