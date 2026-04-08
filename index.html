@@ -858,9 +858,9 @@
     }
 
     /* ══════════════════════════════════════
-       DELETE TRANSACTION (swipe left / hover)
+       SWIPE OPTIONS (transacciones + cuentas)
     ══════════════════════════════════════ */
-    .tx-row {
+    .tx-row, .acc-row {
       position: relative;
       overflow: hidden;
     }
@@ -876,38 +876,168 @@
       width: 100%;
     }
 
+    .acc-row-inner {
+      transition: transform 0.25s ease;
+    }
+
     .tx-row-inner .group-row-body  { flex: 1; min-width: 0; }
 
-    .tx-delete-reveal {
+    .tx-options-reveal, .acc-options-reveal {
       position: absolute;
       right: 0;
       top: 0;
       bottom: 0;
-      width: 80px;
-      background: var(--red);
+      width: 64px;
+      background: var(--bg-3);
       display: flex;
       align-items: center;
       justify-content: center;
       cursor: pointer;
       transform: translateX(100%);
       transition: transform 0.25s ease;
+      border: none;
+      color: var(--label-2);
     }
 
-    .tx-delete-reveal svg { color: #fff; }
+    .tx-row.swiped .tx-row-inner       { transform: translateX(-64px); }
+    .tx-row.swiped .tx-options-reveal  { transform: translateX(0); }
+    .acc-row.swiped .acc-row-inner     { transform: translateX(-64px); }
+    .acc-row.swiped .acc-options-reveal { transform: translateX(0); }
 
-    .tx-row.swiped .tx-row-inner      { transform: translateX(-80px); }
-    .tx-row.swiped .tx-delete-reveal  { transform: translateX(0); }
-
-    /* desktop: hover muestra un icono sutil */
+    /* desktop: hover muestra botón sutil */
     @media (hover: hover) {
-      .tx-delete-reveal {
-        width: 48px;
+      .tx-options-reveal, .acc-options-reveal {
+        width: 44px;
         transform: translateX(0);
         background: transparent;
+        opacity: 0;
+        transition: opacity 0.15s;
       }
-      .tx-delete-reveal svg { color: var(--red); opacity: 0; transition: opacity 0.15s; }
-      .tx-row:hover .tx-delete-reveal svg { opacity: 1; }
-      .tx-row.swiped .tx-row-inner { transform: none; }
+      .tx-row:hover .tx-options-reveal,
+      .acc-row:hover .acc-options-reveal { opacity: 1; }
+      .tx-row.swiped .tx-row-inner,
+      .acc-row.swiped .acc-row-inner { transform: none; }
+    }
+
+    /* ══════════════════════════════════════
+       ACTION SHEET
+    ══════════════════════════════════════ */
+    .action-sheet-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 500;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s ease;
+    }
+    .action-sheet-overlay.active {
+      opacity: 1;
+      pointer-events: all;
+    }
+    .action-sheet {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: var(--bg-1);
+      border-radius: 16px 16px 0 0;
+      padding-bottom: calc(env(safe-area-inset-bottom) + 8px);
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32,0.72,0,1);
+      z-index: 501;
+    }
+    .action-sheet-overlay.active .action-sheet {
+      transform: translateY(0);
+    }
+    .action-sheet-title {
+      text-align: center;
+      font-size: 13px;
+      color: var(--label-2);
+      padding: 14px 20px 6px;
+      font-weight: 500;
+    }
+    .action-sheet-btn {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      padding: 15px 20px;
+      background: none;
+      border: none;
+      border-top: 0.5px solid var(--sep);
+      font-family: var(--font);
+      font-size: 16px;
+      color: var(--label);
+      text-align: left;
+      cursor: pointer;
+    }
+    .action-sheet-btn.danger { color: var(--red); }
+    .action-sheet-cancel {
+      display: block;
+      width: calc(100% - 32px);
+      margin: 8px 16px 0;
+      padding: 15px;
+      background: var(--bg-2);
+      border: none;
+      border-radius: 12px;
+      font-family: var(--font);
+      font-size: 16px;
+      font-weight: 600;
+      color: var(--label);
+      cursor: pointer;
+    }
+
+    /* ══════════════════════════════════════
+       RECURRING TOGGLE
+    ══════════════════════════════════════ */
+    .recurring-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0 8px;
+    }
+    .recurring-label { font-size: 15px; color: var(--label-2); }
+    .toggle-switch {
+      width: 51px; height: 31px;
+      background: var(--bg-3);
+      border-radius: 16px;
+      border: none;
+      cursor: pointer;
+      transition: background 0.2s;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .toggle-switch.on { background: var(--green); }
+    .toggle-switch::after {
+      content: '';
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 27px; height: 27px;
+      background: white;
+      border-radius: 50%;
+      transition: transform 0.2s;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .toggle-switch.on::after { transform: translateX(20px); }
+    .recurring-day-row {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding-bottom: 8px;
+    }
+    .recurring-day-row.show { display: flex; }
+    .recurring-day-row label { font-size: 15px; color: var(--label-2); }
+    .recurring-day-row input {
+      width: 70px;
+      text-align: center;
+      background: var(--bg-2);
+      border: none;
+      border-radius: 8px;
+      padding: 8px;
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--label);
     }
 
     /* ══════════════════════════════════════
@@ -1276,6 +1406,17 @@
           <div class="option-row" id="account-select-to"></div>
         </div>
 
+        <div class="form-section" id="recurring-section">
+          <div class="recurring-row">
+            <span class="recurring-label">Pago recurrente mensual</span>
+            <button class="toggle-switch" id="recurring-toggle" onclick="toggleRecurring()"></button>
+          </div>
+          <div class="recurring-day-row" id="recurring-day-row">
+            <label>Día del mes</label>
+            <input type="number" id="recurring-day" min="1" max="31" placeholder="1">
+          </div>
+        </div>
+
         <button class="btn-primary" onclick="saveTransaction()">Guardar</button>
       </div>
     </div>
@@ -1296,15 +1437,18 @@
 
         <div class="form-section">
           <label class="form-label">Tipo</label>
-          <div class="option-row">
+          <div class="option-row" style="flex-wrap:wrap;gap:8px">
             <button class="option-pill active" data-type="wallet" onclick="setAccountType('wallet')">
-              <span class="icon">📱</span>Billetera
+              <span class="icon">📱</span>Virtual
             </button>
             <button class="option-pill" data-type="savings" onclick="setAccountType('savings')">
               <span class="icon">🏦</span>Ahorro
             </button>
             <button class="option-pill" data-type="cash" onclick="setAccountType('cash')">
               <span class="icon">💵</span>Efectivo
+            </button>
+            <button class="option-pill" data-type="debt" onclick="setAccountType('debt')">
+              <span class="icon">🤝</span>Deuda a favor
             </button>
           </div>
         </div>
@@ -1388,6 +1532,39 @@
 
         <button class="btn-primary" onclick="saveGoal()">Crear meta</button>
       </div>
+    </div>
+  </div>
+
+  <!-- ══════════════ ACTION SHEET ══════════════ -->
+  <div class="action-sheet-overlay" id="action-sheet-overlay" onclick="closeActionSheet()">
+    <div class="action-sheet" onclick="event.stopPropagation()">
+      <div class="action-sheet-title" id="action-sheet-title"></div>
+      <div id="action-sheet-buttons"></div>
+      <button class="action-sheet-cancel" onclick="closeActionSheet()">Cancelar</button>
+    </div>
+  </div>
+
+  <!-- ══════════════ MODAL: EDITAR TRANSACCIÓN ══════════════ -->
+  <div class="modal-overlay" id="modal-edit-tx">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title" id="edit-tx-title">Editar</span>
+        <button class="modal-close-btn" onclick="closeModal('edit-tx')">✕</button>
+      </div>
+      <div class="modal-body" id="edit-tx-body"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════ MODAL: EDITAR CUENTA ══════════════ -->
+  <div class="modal-overlay" id="modal-edit-account">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title" id="edit-account-title">Editar cuenta</span>
+        <button class="modal-close-btn" onclick="closeModal('edit-account')">✕</button>
+      </div>
+      <div class="modal-body" id="edit-account-body"></div>
     </div>
   </div>
 
@@ -1718,22 +1895,33 @@
           displayBalance = convertFromARS(account.balance, 'USD');
         }
         return `
-          <div class="group-row">
-            <div class="group-row-icon gray">${account.icon || '💳'}</div>
-            <div class="group-row-body">
-              <div class="group-row-title">${account.name}</div>
-              <div class="group-row-subtitle">${getAccountTypeName(account.type)}</div>
+          <div class="acc-row" data-id="${account.id}" style="border-bottom:0.5px solid var(--sep)">
+            <div class="acc-row-inner group-row">
+              <div class="group-row-icon gray">${account.icon || '💳'}</div>
+              <div class="group-row-body">
+                <div class="group-row-title">${account.name}</div>
+                <div class="group-row-subtitle">${getAccountTypeName(account.type)}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="group-row-value">${formatCurrency(displayBalance)}</div>
+                ${secondary ? `<div class="group-row-secondary">${secondary}</div>` : ''}
+              </div>
             </div>
-            <div style="text-align:right">
-              <div class="group-row-value">${formatCurrency(displayBalance)}</div>
-              ${secondary ? `<div class="group-row-secondary">${secondary}</div>` : ''}
-            </div>
+            <button class="acc-options-reveal" onclick="openAccActions(${account.id})" aria-label="Opciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
+              </svg>
+            </button>
           </div>`;
       }).join('');
     }
 
     function getAccountTypeName(type) {
-      return { wallet: 'Billetera', savings: 'Caja de ahorro', cash: 'Efectivo' }[type] || type;
+      return { wallet: 'Virtual', savings: 'Ahorro', cash: 'Efectivo', debt: 'Deuda a favor' }[type] || type;
+    }
+
+    function getAccountTypeIcon(type) {
+      return { wallet: '📱', savings: '🏦', cash: '💵', debt: '🤝' }[type] || '💳';
     }
 
     function setAccountType(type) {
@@ -1757,7 +1945,7 @@
         type: selectedAccountType,
         currency: selectedAccountCurrency,
         balance,
-        icon: { wallet: '📱', savings: '🏦', cash: '💵' }[selectedAccountType]
+        icon: getAccountTypeIcon(selectedAccountType)
       });
       saveData(); closeModal('account'); renderAll(); showToast('Cuenta creada');
       document.getElementById('account-name').value = '';
@@ -1790,11 +1978,11 @@
                 ${isExpense ? '−' : '+'}${formatCurrency(displayAmount)}
               </div>
             </div>
-            <div class="tx-delete-reveal" onclick="deleteTransaction(${t.id})" aria-label="Eliminar">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/>
+            <button class="tx-options-reveal" onclick="openTxActions(${t.id})" aria-label="Opciones">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                <circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/>
               </svg>
-            </div>
+            </button>
           </div>`;
       }).join('');
     }
@@ -1836,6 +2024,7 @@
       document.querySelector(`.seg-btn.${type}`)?.classList.add('active');
       document.getElementById('category-section').style.display = type === 'transfer' ? 'none' : 'block';
       document.getElementById('transfer-to-section').style.display = type === 'transfer' ? 'block' : 'none';
+      document.getElementById('recurring-section').style.display = type === 'transfer' ? 'none' : 'block';
     }
 
     function renderCategoryGrid() {
@@ -1897,9 +2086,21 @@
         accountTo.balance += amountTo;
         appData.transactions.push({ id: Date.now(), type: 'transfer', amount, description: description || `Transferencia a ${accountTo.name}`, category: 'transfer', accountId: selectedAccount, accountToId: selectedAccountTo, date: new Date().toISOString().split('T')[0] });
       }
+      // Recurring
+      if (isRecurring && selectedTransactionType !== 'transfer') {
+        const day = parseInt(document.getElementById('recurring-day').value) || new Date().getDate();
+        const lastTx = appData.transactions[appData.transactions.length - 1];
+        appData.recurring.push({ txId: lastTx.id, day, active: true });
+      }
+
       saveData(); closeModal('transaction'); renderAll(); showToast('Movimiento guardado');
       document.getElementById('transaction-amount').value = '';
       document.getElementById('transaction-description').value = '';
+      // Reset recurring
+      isRecurring = false;
+      document.getElementById('recurring-toggle').classList.remove('on');
+      document.getElementById('recurring-day-row').classList.remove('show');
+      document.getElementById('recurring-day').value = '';
     }
 
     // ==================== GOALS ====================
@@ -2373,17 +2574,288 @@
       window.addEventListener('offline', () => { if (currentUser) updateSyncStatus('offline'); });
     });
 
-    // Swipe izquierda para borrar (iOS nativo)
+    // ==================== ACTION SHEET ====================
+    function openActionSheet(title, buttons) {
+      document.getElementById('action-sheet-title').textContent = title;
+      document.getElementById('action-sheet-buttons').innerHTML = buttons.map(b => `
+        <button class="action-sheet-btn ${b.danger ? 'danger' : ''}" onclick="${b.action}">
+          ${b.icon ? `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${b.icon}</svg>` : ''}
+          ${b.label}
+        </button>`).join('');
+      document.getElementById('action-sheet-overlay').classList.add('active');
+      closeAllSwiped();
+    }
+
+    function closeActionSheet() {
+      document.getElementById('action-sheet-overlay').classList.remove('active');
+    }
+
+    function closeAllSwiped() {
+      document.querySelectorAll('.tx-row.swiped, .acc-row.swiped').forEach(r => r.classList.remove('swiped'));
+    }
+
+    // ── Transaction actions ──
+    function openTxActions(id) {
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t) return;
+      openActionSheet(t.description || 'Movimiento', [
+        { label: 'Modificar monto',    icon: '<path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', action: `editTxField(${id},'amount')` },
+        { label: 'Modificar cuenta',   icon: '<rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/>', action: `editTxField(${id},'account')` },
+        { label: 'Modificar categoría',icon: '<path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>', action: `editTxField(${id},'category')` },
+        { label: 'Eliminar',           icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>', action: `confirmDeleteTx(${id})`, danger: true }
+      ]);
+    }
+
+    function editTxField(id, field) {
+      closeActionSheet();
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t) return;
+      const body = document.getElementById('edit-tx-body');
+
+      if (field === 'amount') {
+        document.getElementById('edit-tx-title').textContent = 'Modificar monto';
+        body.innerHTML = `
+          <div class="form-section" style="text-align:center">
+            <input type="text" class="form-input amount" id="etx-amount" placeholder="$0" inputmode="numeric" value="${formatNumber(t.amount)}">
+          </div>
+          <button class="btn-primary" onclick="saveTxAmount(${id})">Guardar</button>`;
+        setTimeout(() => body.querySelector('#etx-amount')?.addEventListener('input', e => {
+          let v = e.target.value.replace(/\D/g,''); e.target.value = v ? formatNumber(parseInt(v)) : '';
+        }), 0);
+
+      } else if (field === 'account') {
+        document.getElementById('edit-tx-title').textContent = 'Modificar cuenta';
+        const opts = appData.accounts.map(acc => `
+          <button class="option-pill ${acc.id === t.accountId ? 'active' : ''}"
+                  data-account="${acc.id}" onclick="selectEtxAccount(${acc.id})">
+            <span class="icon">${acc.icon}</span>${acc.name}
+          </button>`).join('');
+        body.innerHTML = `
+          <div class="form-section"><div class="option-row" id="etx-account-row">${opts}</div></div>
+          <button class="btn-primary" onclick="saveTxAccount(${id})">Guardar</button>`;
+
+      } else if (field === 'category') {
+        document.getElementById('edit-tx-title').textContent = 'Modificar categoría';
+        const cats = appData.categories.filter(c => c.id !== 'income');
+        const opts = cats.map(cat => `
+          <button class="chip ${cat.id === t.category ? 'active' : ''}"
+                  data-category="${cat.id}" onclick="selectEtxCategory('${cat.id}')">
+            <span class="emoji">${cat.emoji}</span>${cat.name}
+          </button>`).join('');
+        body.innerHTML = `
+          <div class="form-section"><div class="chip-grid" id="etx-cat-grid">${opts}</div></div>
+          <button class="btn-primary" onclick="saveTxCategory(${id})">Guardar</button>`;
+      }
+
+      document.getElementById('modal-edit-tx').classList.add('active');
+    }
+
+    let etxSelectedAccount = null;
+    let etxSelectedCategory = null;
+
+    function selectEtxAccount(id) {
+      etxSelectedAccount = id;
+      document.querySelectorAll('#etx-account-row .option-pill').forEach(b =>
+        b.classList.toggle('active', parseInt(b.dataset.account) === id));
+    }
+
+    function selectEtxCategory(cat) {
+      etxSelectedCategory = cat;
+      document.querySelectorAll('#etx-cat-grid .chip').forEach(b =>
+        b.classList.toggle('active', b.dataset.category === cat));
+    }
+
+    function saveTxAmount(id) {
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t) return;
+      const raw = document.getElementById('etx-amount').value.replace(/\D/g,'');
+      const newAmount = parseFloat(raw) || 0;
+      if (!newAmount) { showToast('Ingresá un monto'); return; }
+      const acc = appData.accounts.find(a => a.id === t.accountId);
+      if (acc) {
+        if (t.type === 'expense') acc.balance += t.amount - newAmount;
+        else if (t.type === 'income') acc.balance -= t.amount - newAmount;
+      }
+      t.amount = newAmount;
+      saveData(); closeModal('edit-tx'); renderAll(); showToast('Monto actualizado');
+    }
+
+    function saveTxAccount(id) {
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t || !etxSelectedAccount) { showToast('Seleccioná una cuenta'); return; }
+      const oldAcc = appData.accounts.find(a => a.id === t.accountId);
+      const newAcc = appData.accounts.find(a => a.id === etxSelectedAccount);
+      if (oldAcc && newAcc && oldAcc.id !== newAcc.id) {
+        if (t.type === 'expense') { oldAcc.balance += t.amount; newAcc.balance -= t.amount; }
+        else if (t.type === 'income') { oldAcc.balance -= t.amount; newAcc.balance += t.amount; }
+      }
+      t.accountId = etxSelectedAccount;
+      etxSelectedAccount = null;
+      saveData(); closeModal('edit-tx'); renderAll(); showToast('Cuenta actualizada');
+    }
+
+    function saveTxCategory(id) {
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t || !etxSelectedCategory) { showToast('Seleccioná una categoría'); return; }
+      t.category = etxSelectedCategory;
+      etxSelectedCategory = null;
+      saveData(); closeModal('edit-tx'); renderAll(); showToast('Categoría actualizada');
+    }
+
+    function confirmDeleteTx(id) {
+      closeActionSheet();
+      const t = appData.transactions.find(tx => tx.id === id);
+      if (!t) return;
+      openActionSheet(`Eliminar "${t.description || 'movimiento'}"?`, [
+        { label: 'Sí, eliminar', action: `deleteTransaction(${id})`, danger: true }
+      ]);
+    }
+
+    // ── Account actions ──
+    function openAccActions(id) {
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc) return;
+      openActionSheet(acc.name, [
+        { label: 'Ajustar saldo real',  icon: '<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/>', action: `editAccField(${id},'balance')` },
+        { label: 'Cambiar nombre',       icon: '<path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>', action: `editAccField(${id},'name')` },
+        { label: 'Cambiar tipo',         icon: '<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 014-4h14M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 01-4 4H3"/>', action: `editAccField(${id},'type')` },
+        { label: 'Eliminar cuenta',      icon: '<polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>', action: `confirmDeleteAcc(${id})`, danger: true }
+      ]);
+    }
+
+    function editAccField(id, field) {
+      closeActionSheet();
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc) return;
+      const body = document.getElementById('edit-account-body');
+
+      if (field === 'balance') {
+        document.getElementById('edit-account-title').textContent = 'Ajustar saldo real';
+        body.innerHTML = `
+          <p style="font-size:14px;color:var(--label-2);margin-bottom:16px;line-height:1.5">
+            Ingresá el saldo real actual de <strong>${acc.name}</strong>. La diferencia se registra automáticamente.
+          </p>
+          <div class="form-section" style="text-align:center">
+            <input type="text" class="form-input amount" id="eacc-balance" placeholder="$0" inputmode="numeric" value="${formatNumber(acc.balance)}">
+          </div>
+          <button class="btn-primary" onclick="saveAccBalance(${id})">Aplicar</button>`;
+        setTimeout(() => document.getElementById('eacc-balance')?.addEventListener('input', e => {
+          let v = e.target.value.replace(/\D/g,''); e.target.value = v ? formatNumber(parseInt(v)) : '';
+        }), 0);
+
+      } else if (field === 'name') {
+        document.getElementById('edit-account-title').textContent = 'Cambiar nombre';
+        body.innerHTML = `
+          <div class="form-section">
+            <input type="text" class="form-input" id="eacc-name" placeholder="Nombre" value="${acc.name}">
+          </div>
+          <button class="btn-primary" onclick="saveAccName(${id})">Guardar</button>`;
+
+      } else if (field === 'type') {
+        document.getElementById('edit-account-title').textContent = 'Cambiar tipo';
+        const types = [
+          { id: 'wallet', label: 'Virtual',       icon: '📱' },
+          { id: 'savings',label: 'Ahorro',         icon: '🏦' },
+          { id: 'cash',   label: 'Efectivo',       icon: '💵' },
+          { id: 'debt',   label: 'Deuda a favor',  icon: '🤝' }
+        ];
+        const opts = types.map(t => `
+          <button class="option-pill ${acc.type === t.id ? 'active' : ''}"
+                  data-type="${t.id}" onclick="selectEaccType('${t.id}')">
+            <span class="icon">${t.icon}</span>${t.label}
+          </button>`).join('');
+        body.innerHTML = `
+          <div class="form-section"><div class="option-row" style="flex-wrap:wrap;gap:8px" id="eacc-type-row">${opts}</div></div>
+          <button class="btn-primary" onclick="saveAccType(${id})">Guardar</button>`;
+      }
+
+      document.getElementById('modal-edit-account').classList.add('active');
+    }
+
+    let eaccSelectedType = null;
+
+    function selectEaccType(type) {
+      eaccSelectedType = type;
+      document.querySelectorAll('#eacc-type-row .option-pill').forEach(b =>
+        b.classList.toggle('active', b.dataset.type === type));
+    }
+
+    function saveAccBalance(id) {
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc) return;
+      const raw = document.getElementById('eacc-balance').value.replace(/\D/g,'');
+      const newBalance = parseFloat(raw) || 0;
+      const diff = newBalance - acc.balance;
+      if (diff !== 0) {
+        appData.transactions.push({
+          id: Date.now(), type: diff > 0 ? 'income' : 'expense',
+          amount: Math.abs(diff), description: `Ajuste de saldo — ${acc.name}`,
+          category: diff > 0 ? 'income' : 'services', accountId: id,
+          date: new Date().toISOString().split('T')[0]
+        });
+      }
+      acc.balance = newBalance;
+      saveData(); closeModal('edit-account'); renderAll(); showToast('Saldo actualizado');
+    }
+
+    function saveAccName(id) {
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc) return;
+      const name = document.getElementById('eacc-name').value.trim();
+      if (!name) { showToast('Ingresá un nombre'); return; }
+      acc.name = name;
+      saveData(); closeModal('edit-account'); renderAll(); showToast('Nombre actualizado');
+    }
+
+    function saveAccType(id) {
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc || !eaccSelectedType) { showToast('Seleccioná un tipo'); return; }
+      acc.type = eaccSelectedType;
+      acc.icon = getAccountTypeIcon(eaccSelectedType);
+      eaccSelectedType = null;
+      saveData(); closeModal('edit-account'); renderAll(); showToast('Tipo actualizado');
+    }
+
+    function confirmDeleteAcc(id) {
+      closeActionSheet();
+      const acc = appData.accounts.find(a => a.id === id);
+      if (!acc) return;
+      openActionSheet(`Eliminar "${acc.name}"?`, [
+        { label: 'Sí, eliminar cuenta', action: `deleteAccount(${id})`, danger: true }
+      ]);
+    }
+
+    function deleteAccount(id) {
+      closeActionSheet();
+      appData.accounts = appData.accounts.filter(a => a.id !== id);
+      appData.transactions = appData.transactions.filter(t => t.accountId !== id);
+      saveData(); renderAll(); showToast('Cuenta eliminada');
+    }
+
+    // ==================== RECURRING ====================
+    let isRecurring = false;
+
+    function toggleRecurring() {
+      isRecurring = !isRecurring;
+      const btn = document.getElementById('recurring-toggle');
+      const dayRow = document.getElementById('recurring-day-row');
+      btn.classList.toggle('on', isRecurring);
+      dayRow.classList.toggle('show', isRecurring);
+      if (isRecurring && !document.getElementById('recurring-day').value) {
+        document.getElementById('recurring-day').value = new Date().getDate();
+      }
+    }
+
+    // ==================== SWIPE (tx + acc) ====================
     let swipeStartX = 0, swipeStartY = 0, swipeTarget = null;
 
     document.addEventListener('touchstart', e => {
-      swipeTarget = e.target.closest('.tx-row');
+      swipeTarget = e.target.closest('.tx-row') || e.target.closest('.acc-row');
       if (swipeTarget) {
         swipeStartX = e.touches[0].clientX;
         swipeStartY = e.touches[0].clientY;
-      } else {
-        // Cerrar cualquier fila abierta si toca afuera
-        document.querySelectorAll('.tx-row.swiped').forEach(r => r.classList.remove('swiped'));
+      } else if (!e.target.closest('.action-sheet') && !e.target.closest('.modal')) {
+        closeAllSwiped();
       }
     }, { passive: true });
 
@@ -2391,10 +2863,9 @@
       if (!swipeTarget) return;
       const dx = e.touches[0].clientX - swipeStartX;
       const dy = e.touches[0].clientY - swipeStartY;
-      // Solo activar si el gesto es más horizontal que vertical
       if (Math.abs(dx) < Math.abs(dy)) return;
       if (dx < -40) {
-        document.querySelectorAll('.tx-row.swiped').forEach(r => {
+        document.querySelectorAll('.tx-row.swiped, .acc-row.swiped').forEach(r => {
           if (r !== swipeTarget) r.classList.remove('swiped');
         });
         swipeTarget.classList.add('swiped');
