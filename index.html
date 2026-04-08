@@ -513,6 +513,103 @@
       cursor: pointer;
     }
 
+    /* ── Vencimientos ── */
+    .bill-alert-card {
+      margin: 0 16px 10px;
+      background: var(--bg-1);
+      border-radius: var(--radius-lg);
+      border-left: 3px solid var(--orange);
+      padding: 14px 16px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .bill-alert-card.due { border-left-color: var(--red); }
+    .bill-alert-emoji { font-size: 28px; flex-shrink: 0; }
+    .bill-alert-body { flex: 1; min-width: 0; }
+    .bill-alert-name { font-size: 15px; font-weight: 600; margin-bottom: 2px; }
+    .bill-alert-meta { font-size: 13px; color: var(--label-2); }
+    .bill-alert-client {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--label-2);
+      margin-top: 2px;
+    }
+    .bill-alert-actions { display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; }
+    .bill-btn-pay {
+      padding: 7px 14px;
+      background: var(--blue);
+      color: #fff;
+      border: none;
+      border-radius: 20px;
+      font-family: var(--font);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+    .bill-btn-copy {
+      padding: 6px 14px;
+      background: var(--fill);
+      color: var(--label-2);
+      border: none;
+      border-radius: 20px;
+      font-family: var(--font);
+      font-size: 12px;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .bill-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border-bottom: 0.5px solid var(--sep);
+    }
+    .bill-row:last-child { border-bottom: none; }
+    .bill-row-emoji { font-size: 22px; flex-shrink: 0; }
+    .bill-row-body { flex: 1; min-width: 0; }
+    .bill-row-name { font-size: 15px; font-weight: 500; }
+    .bill-row-meta { font-size: 13px; color: var(--label-2); margin-top: 2px; }
+    .bill-row-del {
+      background: none;
+      border: none;
+      color: var(--label-3);
+      cursor: pointer;
+      padding: 6px;
+    }
+
+    /* selector de empresa en modal */
+    .company-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 4px;
+    }
+    .company-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      padding: 10px 6px;
+      background: var(--bg-2);
+      border: 1.5px solid transparent;
+      border-radius: var(--radius);
+      font-family: var(--font);
+      font-size: 12px;
+      color: var(--label-2);
+      cursor: pointer;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .company-btn.active {
+      border-color: var(--blue);
+      color: var(--blue);
+      background: rgba(10,132,255,0.1);
+    }
+    .company-btn .co-emoji { font-size: 22px; }
+
     .goal-add-btn:active { opacity: 0.7; }
 
     /* ══════════════════════════════════════
@@ -1180,6 +1277,9 @@
         <div class="exchange-meta" id="exchange-update">—</div>
       </div>
 
+      <!-- Vencimientos próximos -->
+      <div id="bills-alert-section"></div>
+
       <!-- Cuentas -->
       <div class="section-label">Cuentas</div>
       <div class="group" id="accounts-grid"></div>
@@ -1243,6 +1343,12 @@
     <div class="container">
       <div class="section-label">Metas</div>
       <div class="goal-group" id="goals-grid"></div>
+
+      <div class="section-label" style="display:flex;justify-content:space-between;align-items:center;padding-right:20px;">
+        <span>Vencimientos</span>
+        <span style="color:var(--blue);font-size:13px;cursor:pointer;" onclick="openModal('bill')">+ Agregar</span>
+      </div>
+      <div class="goal-group" id="bills-grid"></div>
     </div>
   </div>
 
@@ -1527,6 +1633,43 @@
     </div>
   </div>
 
+  <!-- ══════════════ MODAL: VENCIMIENTO ══════════════ -->
+  <div class="modal-overlay" id="modal-bill">
+    <div class="modal">
+      <div class="modal-handle"></div>
+      <div class="modal-header">
+        <span class="modal-title">Nuevo vencimiento</span>
+        <button class="modal-close-btn" onclick="closeModal('bill')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-section">
+          <label class="form-label">Servicio</label>
+          <div class="company-grid" id="company-grid"></div>
+        </div>
+        <div class="form-section" id="bill-custom-name-section" style="display:none">
+          <input type="text" class="form-input" id="bill-custom-name" placeholder="Nombre del servicio">
+        </div>
+        <div class="form-section" id="bill-custom-url-section" style="display:none">
+          <input type="url" class="form-input" id="bill-custom-url" placeholder="Link de pago (opcional)">
+        </div>
+        <div class="form-section">
+          <label class="form-label">Número de cliente</label>
+          <input type="text" class="form-input" id="bill-client-number" placeholder="Ej: 12345678" inputmode="numeric">
+        </div>
+        <div class="form-section">
+          <label class="form-label">Ventana de pago (día del mes)</label>
+          <div style="display:flex;align-items:center;gap:12px">
+            <input type="number" class="form-input" id="bill-day-start" placeholder="Desde" min="1" max="31" style="flex:1;text-align:center">
+            <span style="color:var(--label-2)">→</span>
+            <input type="number" class="form-input" id="bill-day-end" placeholder="Hasta" min="1" max="31" style="flex:1;text-align:center">
+          </div>
+          <div style="font-size:12px;color:var(--label-3);margin-top:6px">Te avisamos a partir del día de inicio</div>
+        </div>
+        <button class="btn-primary" onclick="saveBill()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ══════════════ ACTION SHEET ══════════════ -->
   <div class="action-sheet-overlay" id="action-sheet-overlay" onclick="closeActionSheet()">
     <div class="action-sheet" onclick="event.stopPropagation()">
@@ -1616,6 +1759,7 @@
         { id: 'income',        name: 'Ingreso',       emoji: '💰', color: '#30D158' }
       ],
       recurring: [],
+      bills: [],
       settings: {
         currency: 'ARS',
         exchangeRate: 1200,
@@ -1856,6 +2000,7 @@
     function openModal(type) {
       document.getElementById(`modal-${type}`).classList.add('active');
       if (type === 'transaction') { renderCategoryGrid(); renderAccountSelect(); }
+      if (type === 'bill') { selectedCompanyId = null; renderCompanyGrid(); }
     }
 
     function closeModal(type) {
@@ -2563,6 +2708,142 @@
       saveData(); renderAll(); showToast('Datos borrados');
     }
 
+    // ==================== BILLS / VENCIMIENTOS ====================
+    const BILL_COMPANIES = [
+      { id: 'metrogas',  name: 'Metrogas',      emoji: '🔥', url: 'https://www.metrogas.com.ar/hogares/pagos/' },
+      { id: 'edenor',   name: 'Edenor',         emoji: '⚡', url: 'https://www.edenor.com/hogares/factura/' },
+      { id: 'edesur',   name: 'Edesur',         emoji: '⚡', url: 'https://www.edesur.com.ar/hogares/' },
+      { id: 'aysa',     name: 'AySA',           emoji: '💧', url: 'https://www.aysa.com.ar/Inicio/pago_electronico/pago-electronico' },
+      { id: 'telecentro',name: 'Telecentro',    emoji: '📡', url: 'https://www.telecentro.com.ar/pagar-factura' },
+      { id: 'claro',    name: 'Claro',          emoji: '🌐', url: 'https://www.claro.com.ar/personas/pagos/' },
+      { id: 'personal', name: 'Personal',       emoji: '📱', url: 'https://www.personal.com.ar/servicios/pago-de-facturas/' },
+      { id: 'movistar', name: 'Movistar',       emoji: '📱', url: 'https://www.movistar.com.ar/c/pagar-factura' },
+      { id: 'directv',  name: 'DirecTV',        emoji: '📺', url: 'https://www.directv.com.ar/pagar/' },
+      { id: 'custom',   name: 'Otro',           emoji: '🏢', url: '' }
+    ];
+
+    let selectedCompanyId = null;
+
+    function renderCompanyGrid() {
+      document.getElementById('company-grid').innerHTML = BILL_COMPANIES.map(c => `
+        <button class="company-btn ${selectedCompanyId === c.id ? 'active' : ''}"
+                data-company="${c.id}" onclick="selectCompany('${c.id}')">
+          <span class="co-emoji">${c.emoji}</span>${c.name}
+        </button>`).join('');
+    }
+
+    function selectCompany(id) {
+      selectedCompanyId = id;
+      document.querySelectorAll('.company-btn').forEach(b =>
+        b.classList.toggle('active', b.dataset.company === id));
+      const isCustom = id === 'custom';
+      document.getElementById('bill-custom-name-section').style.display = isCustom ? 'block' : 'none';
+      document.getElementById('bill-custom-url-section').style.display  = isCustom ? 'block' : 'none';
+    }
+
+    function saveBill() {
+      if (!selectedCompanyId) { showToast('Seleccioná un servicio'); return; }
+      const clientNumber = document.getElementById('bill-client-number').value.trim();
+      const dayStart = parseInt(document.getElementById('bill-day-start').value) || 1;
+      const dayEnd   = parseInt(document.getElementById('bill-day-end').value)   || dayStart + 7;
+
+      let company = BILL_COMPANIES.find(c => c.id === selectedCompanyId);
+      let name = company.name;
+      let url  = company.url;
+
+      if (selectedCompanyId === 'custom') {
+        name = document.getElementById('bill-custom-name').value.trim() || 'Servicio';
+        url  = document.getElementById('bill-custom-url').value.trim();
+      }
+
+      if (!appData.bills) appData.bills = [];
+      appData.bills.push({
+        id: Date.now(), companyId: selectedCompanyId,
+        name, emoji: company.emoji, url,
+        clientNumber, dayStart, dayEnd, active: true
+      });
+
+      saveData(); closeModal('bill'); renderAll(); showToast('Vencimiento guardado');
+      // reset
+      selectedCompanyId = null;
+      document.getElementById('bill-client-number').value = '';
+      document.getElementById('bill-day-start').value = '';
+      document.getElementById('bill-day-end').value = '';
+      document.getElementById('bill-custom-name').value = '';
+      document.getElementById('bill-custom-url').value = '';
+    }
+
+    function deleteBill(id) {
+      appData.bills = (appData.bills || []).filter(b => b.id !== id);
+      saveData(); renderAll(); showToast('Vencimiento eliminado');
+    }
+
+    function copyClientNumber(number) {
+      navigator.clipboard?.writeText(number).catch(() => {});
+      showToast('Número copiado');
+    }
+
+    function openBillLink(url, clientNumber) {
+      if (clientNumber) navigator.clipboard?.writeText(clientNumber).catch(() => {});
+      if (url) window.open(url, '_blank');
+      if (clientNumber) showToast('Número copiado — abriendo sitio...');
+    }
+
+    function renderBills() {
+      const bills = appData.bills || [];
+      const grid = document.getElementById('bills-grid');
+      if (!bills.length) {
+        grid.innerHTML = '<div class="empty" style="padding:20px 16px">Sin vencimientos cargados</div>';
+        return;
+      }
+      grid.innerHTML = bills.map(b => `
+        <div class="bill-row">
+          <div class="bill-row-emoji">${b.emoji}</div>
+          <div class="bill-row-body">
+            <div class="bill-row-name">${b.name}</div>
+            <div class="bill-row-meta">Del día ${b.dayStart} al ${b.dayEnd} · N° ${b.clientNumber || '—'}</div>
+          </div>
+          <button class="bill-row-del" onclick="deleteBill(${b.id})" aria-label="Eliminar">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+            </svg>
+          </button>
+        </div>`).join('');
+    }
+
+    function renderBillsAlert() {
+      const bills = appData.bills || [];
+      const today = new Date().getDate();
+      const section = document.getElementById('bills-alert-section');
+
+      // Mostrar si estamos en la ventana o hasta 3 días antes
+      const active = bills.filter(b => b.active !== false &&
+        today >= b.dayStart - 3 && today <= b.dayEnd);
+
+      if (!active.length) { section.innerHTML = ''; return; }
+
+      const label = (b) => {
+        if (today < b.dayStart) return `Vence en ${b.dayStart - today} día${b.dayStart - today > 1 ? 's' : ''}`;
+        if (today > b.dayEnd)   return 'Vencido';
+        return `Vence el día ${b.dayEnd}`;
+      };
+      const isDue = (b) => today >= b.dayStart && today <= b.dayEnd;
+
+      section.innerHTML = active.map(b => `
+        <div class="bill-alert-card ${isDue(b) ? 'due' : ''}">
+          <div class="bill-alert-emoji">${b.emoji}</div>
+          <div class="bill-alert-body">
+            <div class="bill-alert-name">${b.name}</div>
+            <div class="bill-alert-meta">${label(b)}</div>
+            ${b.clientNumber ? `<div class="bill-alert-client">N° ${b.clientNumber}</div>` : ''}
+          </div>
+          <div class="bill-alert-actions">
+            ${b.url ? `<button class="bill-btn-pay" onclick="openBillLink('${b.url}','${b.clientNumber || ''}')">Pagar</button>` : ''}
+            ${b.clientNumber ? `<button class="bill-btn-copy" onclick="copyClientNumber('${b.clientNumber}')">Copiar N°</button>` : ''}
+          </div>
+        </div>`).join('');
+    }
+
     // ==================== RENDER ALL ====================
     function renderAll() {
       renderStats();
@@ -2570,6 +2851,8 @@
       renderTransactions('recent-transactions', 5);
       renderTransactions('all-transactions');
       renderGoals();
+      renderBills();
+      renderBillsAlert();
       updateExchangeRate();
     }
 
