@@ -2011,13 +2011,17 @@
 
     async function doSignOut() {
       closeActionSheet();
-      if (!supabaseClient) return;
-      if (realtimeChannel) {
-        supabaseClient.removeChannel(realtimeChannel);
+      // Limpiar estado local siempre, independiente de lo que haga Supabase
+      if (realtimeChannel && supabaseClient) {
+        try { supabaseClient.removeChannel(realtimeChannel); } catch {}
         realtimeChannel = null;
       }
       if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
-      await supabaseClient.auth.signOut();
+      currentUser = null;
+      if (supabaseClient) {
+        try { await supabaseClient.auth.signOut(); } catch {}
+      }
+      showLoginScreen();
     }
 
     function showLoginScreen() {
