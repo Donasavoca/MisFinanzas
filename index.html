@@ -2003,16 +2003,15 @@
       // onAuthStateChange maneja el login automáticamente
     }
 
-    async function signOut() {
-      if (realtimeChannel && supabaseClient) {
-        try { supabaseClient.removeChannel(realtimeChannel); } catch {}
-        realtimeChannel = null;
-      }
-      if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
-      if (supabaseClient) {
-        try { await supabaseClient.auth.signOut(); } catch {}
-      }
-      window.location.href = window.location.pathname;
+    function signOut() {
+      // Borrar sesión de Supabase del localStorage directamente
+      Object.keys(localStorage).forEach(k => {
+        if (k.startsWith('sb-')) localStorage.removeItem(k);
+      });
+      // Intentar signOut de Supabase (best effort)
+      if (supabaseClient) supabaseClient.auth.signOut().catch(() => {});
+      // Recargar la página — sin sesión, checkAuth() mostrará el login
+      location.reload();
     }
 
     function showLoginScreen() {
