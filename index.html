@@ -2004,24 +2004,30 @@
     }
 
     function signOut() {
-      openActionSheet('¿Cerrar sesión?', [
-        { label: 'Cerrar sesión', danger: true, action: 'doSignOut()' }
-      ]);
+      // Usar el action sheet con referencia directa al handler
+      const overlay = document.getElementById('action-sheet-overlay');
+      document.getElementById('action-sheet-title').textContent = '¿Cerrar sesión?';
+      document.getElementById('action-sheet-buttons').innerHTML = '';
+      const btn = document.createElement('button');
+      btn.className = 'action-sheet-btn danger';
+      btn.textContent = 'Cerrar sesión';
+      btn.addEventListener('click', doSignOut);
+      document.getElementById('action-sheet-buttons').appendChild(btn);
+      overlay.classList.add('active');
     }
 
     async function doSignOut() {
       closeActionSheet();
-      // Limpiar estado local siempre, independiente de lo que haga Supabase
       if (realtimeChannel && supabaseClient) {
         try { supabaseClient.removeChannel(realtimeChannel); } catch {}
         realtimeChannel = null;
       }
       if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
-      currentUser = null;
       if (supabaseClient) {
         try { await supabaseClient.auth.signOut(); } catch {}
       }
-      showLoginScreen();
+      // Reload limpio — checkAuth() detectará que no hay sesión
+      window.location.href = window.location.pathname;
     }
 
     function showLoginScreen() {
