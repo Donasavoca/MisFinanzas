@@ -1,4 +1,4 @@
-const CACHE_VERSION = '2026-04-08-2';
+const CACHE_VERSION = '2026-04-08-3';
 const CACHE_NAME = `misfinanzas-${CACHE_VERSION}`;
 const STATIC_ASSETS = [
   '/MisFinanzas/manifest.json',

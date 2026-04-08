@@ -1241,7 +1241,7 @@
       <div class="nav-bar-inner">
         <span class="nav-title">Finanzas</span>
         <div style="display:flex;align-items:center;gap:10px">
-          <div class="sync-dot" id="sync-indicator" title="Sin sincronización"></div>
+          <div class="sync-dot" id="sync-indicator" title="Tocar para sincronizar" onclick="loadDataFromSupabase()" style="cursor:pointer"></div>
           <button class="nav-btn" onclick="showPage('settings')" aria-label="Configuración">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
               <circle cx="12" cy="12" r="3"/>
@@ -1912,11 +1912,23 @@
 
     // Al volver al foco (cambiar de pestaña o desbloquear el celular),
     // hacer un pull fresco para no quedarse desactualizado
+    // Pull al volver al foco
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'visible' && currentUser) {
         loadDataFromSupabase();
       }
     });
+
+    // Sync periódico cada 30s como fallback si el websocket falla
+    let syncInterval = null;
+    function startSyncInterval() {
+      if (syncInterval) clearInterval(syncInterval);
+      syncInterval = setInterval(() => {
+        if (currentUser && document.visibilityState === 'visible' && navigator.onLine) {
+          loadDataFromSupabase();
+        }
+      }, 30000);
+    }
 
     function updateSyncStatus(status) {
       const dot = document.getElementById('sync-indicator');
@@ -1937,9 +1949,11 @@
           showApp();
           showAccountSection(currentUser.email);
           setupRealtime();
+          startSyncInterval();
           await loadDataFromSupabase();
         } else if (event === 'SIGNED_OUT') {
           currentUser = null;
+          if (syncInterval) { clearInterval(syncInterval); syncInterval = null; }
           showLoginScreen();
         }
       });
@@ -1950,6 +1964,7 @@
         showApp();
         showAccountSection(currentUser.email);
         setupRealtime();
+        startSyncInterval();
         await loadDataFromSupabase();
       } else {
         showLoginScreen();
