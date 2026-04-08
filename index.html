@@ -1391,6 +1391,26 @@
         </div>
       </div>
 
+      <div class="section-label">Acceso rápido</div>
+      <div class="group">
+        <div style="padding:14px 16px">
+          <div style="font-size:14px;color:var(--label-2);line-height:1.6;margin-bottom:12px">
+            Agregá este link a tu pantalla de inicio para abrir el formulario de gasto con <strong style="color:var(--label)">1 solo toque</strong>.
+          </div>
+          <div style="background:var(--bg-2);border-radius:10px;padding:10px 14px;font-family:var(--font-mono);font-size:12px;color:var(--blue);word-break:break-all;margin-bottom:12px;user-select:text;-webkit-user-select:text">
+            https://donasavoca.github.io/MisFinanzas/?add=1
+          </div>
+          <div style="font-size:13px;color:var(--label-3);line-height:1.6">
+            <strong style="color:var(--label-2)">iOS:</strong> Abrí el link en Safari → compartir (□↑) → "Agregar a pantalla de inicio"<br>
+            <strong style="color:var(--label-2)">Android:</strong> Mantené presionado el ícono de la app → "Nuevo gasto"
+          </div>
+          <button class="btn-primary" style="margin-top:14px;background:var(--fill);color:var(--blue);font-size:14px;padding:12px"
+            onclick="navigator.clipboard?.writeText('https://donasavoca.github.io/MisFinanzas/?add=1').then(()=>showToast('Link copiado'))">
+            Copiar link
+          </button>
+        </div>
+      </div>
+
       <div class="section-label">App</div>
       <div class="group">
         <div class="group-row" onclick="forceUpdate()">
@@ -2870,6 +2890,20 @@
       });
 
       await checkAuth();
+
+      // Shortcut de acceso rápido: ?add=1 abre el modal directo
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('add') === '1') {
+        setTimeout(() => {
+          openModal('transaction');
+          renderCategoryGrid();
+          renderAccountSelect();
+          const amt = params.get('amount');
+          const desc = params.get('desc');
+          if (amt) document.getElementById('transaction-amount').value = formatNumber(parseInt(amt));
+          if (desc) document.getElementById('transaction-description').value = desc;
+        }, 300);
+      }
 
       window.addEventListener('online',  () => { processOfflineQueue(); });
       window.addEventListener('offline', () => { if (currentUser) updateSyncStatus('offline'); });

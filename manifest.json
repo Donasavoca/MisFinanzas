@@ -21,5 +21,14 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Nuevo gasto",
+      "short_name": "Gasto",
+      "description": "Registrar un gasto rápido",
+      "url": "/MisFinanzas/?add=1",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
   ]
 }
