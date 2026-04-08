@@ -2003,21 +2003,7 @@
       // onAuthStateChange maneja el login automáticamente
     }
 
-    function signOut() {
-      // Usar el action sheet con referencia directa al handler
-      const overlay = document.getElementById('action-sheet-overlay');
-      document.getElementById('action-sheet-title').textContent = '¿Cerrar sesión?';
-      document.getElementById('action-sheet-buttons').innerHTML = '';
-      const btn = document.createElement('button');
-      btn.className = 'action-sheet-btn danger';
-      btn.textContent = 'Cerrar sesión';
-      btn.addEventListener('click', doSignOut);
-      document.getElementById('action-sheet-buttons').appendChild(btn);
-      overlay.classList.add('active');
-    }
-
-    async function doSignOut() {
-      closeActionSheet();
+    async function signOut() {
       if (realtimeChannel && supabaseClient) {
         try { supabaseClient.removeChannel(realtimeChannel); } catch {}
         realtimeChannel = null;
@@ -2026,7 +2012,6 @@
       if (supabaseClient) {
         try { await supabaseClient.auth.signOut(); } catch {}
       }
-      // Reload limpio — checkAuth() detectará que no hay sesión
       window.location.href = window.location.pathname;
     }
 
